@@ -67,6 +67,7 @@ internal class Program
 
     private static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration)
     {
+#if DEBUG
         services.AddCors(options =>
         {
             var allowedHosts = configuration["AllowedHosts"];
@@ -79,7 +80,7 @@ internal class Program
                                 .AllowCredentials();
                         });
         });
-
+#endif
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
