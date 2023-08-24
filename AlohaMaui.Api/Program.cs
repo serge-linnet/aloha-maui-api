@@ -135,5 +135,9 @@ internal class Program
         var googleClientId = configuration["Auth:Google:ClientId"];
         Guard.Against.NullOrEmpty(googleClientId, nameof(googleClientId));
         services.AddSingleton<IGoogleAuthValidator>(new GoogleAuthValidator(googleClientId));
+
+        var blobConnectionString = configuration["Azure:Blob:ConnectionString"];
+        Guard.Against.NullOrEmpty(blobConnectionString, nameof(blobConnectionString));
+        services.AddSingleton<IBlobServiceClientProvider>(new BlobServiceClientProvider(blobConnectionString));
     }
 }

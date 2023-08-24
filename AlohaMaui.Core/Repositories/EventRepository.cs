@@ -9,6 +9,7 @@ namespace AlohaMaui.Core.Repositories
         Task<Event> Find(Guid id);
         IEnumerable<Event> FindEvents(string query);
         IEnumerable<Event> FindPendingEvents();
+        Task<Event> CreateEvent(Event entity);
     }
 
     public class EventRepository : IEventRepository
@@ -41,6 +42,13 @@ namespace AlohaMaui.Core.Repositories
             var events = container.GetItemLinqQueryable<Event>(allowSynchronousQueryExecution: true).ToList()
                 .Where(x => x.Status == EventStatus.Pending);
             return events;
+        }
+
+        public async Task<Event> CreateEvent(Event entity)
+        {
+            var container = _containerProvider.GetContainer();
+            var newEntity = await container.CreateItemAsync(entity, new PartitionKey(entity.Id.ToString()));
+            return newEntity;
         }
     }
 }
