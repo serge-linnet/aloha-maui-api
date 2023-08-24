@@ -10,6 +10,8 @@ namespace AlohaMaui.Core.Repositories
         IEnumerable<Event> FindEvents(string query);
         IEnumerable<Event> FindPendingEvents();
         Task<Event> CreateEvent(Event entity);
+        Task<IEnumerable<Event>> FindEventsForUser(Guid userId);
+        Task<Event> Update(Event entity);
     }
 
     public class EventRepository : IEventRepository
@@ -48,6 +50,31 @@ namespace AlohaMaui.Core.Repositories
         {
             var container = _containerProvider.GetContainer();
             var newEntity = await container.CreateItemAsync(entity, new PartitionKey(entity.Id.ToString()));
+            return newEntity;
+        }
+
+        public async Task<IEnumerable<Event>> FindEventsForUser(Guid userId)
+        {
+            var container = _containerProvider.GetContainer();
+            var query = new QueryDefinition("SELECT * from events e WHERE e.userId = @id")
+                    .WithParameter("@id", userId);
+
+            var results = new List<Event>();
+            using var iterator = container.GetItemQueryIterator<Event>(query);
+            while (iterator.HasMoreResults)
+            {
+                foreach (var item in await iterator.ReadNextAsync())
+                {
+                    results.Add(item);
+                }
+            }
+            return results;
+        }
+
+        public async Task<Event> Update(Event entity)
+        {
+            var container = _containerProvider.GetContainer();
+            var newEntity = await container.UpsertItemAsync(entity, new PartitionKey(entity.Id.ToString()));
             return newEntity;
         }
     }

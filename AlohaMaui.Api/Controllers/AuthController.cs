@@ -4,6 +4,7 @@ using AlohaMaui.Core.Repositories;
 using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
 using System.Security.Cryptography;
 using User = AlohaMaui.Core.Entities.User;
 
@@ -41,19 +42,11 @@ public class AuthController : ControllerBase
             user = await _userRepository.CreateUser(user);
         }
 
-        var token = _jwtTokenGenerator.Generate(user);
-        SetJwt(token.Token);
-
-        var refreshToken = GenerateRefreshToken();
-        SetRefreshToken(refreshToken);
-
-        user.Token = refreshToken.Token;
-        user.TokenCreated = refreshToken.Created;
-        user.TokenExpires = refreshToken.Expires;
-        await _userRepository.UpdateUser(user);
+        await DoAllTheTokenThings(user);
 
         return Ok(user);
     }
+
 
     [HttpPost]
     [Authorize]
@@ -65,12 +58,32 @@ public class AuthController : ControllerBase
         return Ok();
     }
 
+    [HttpGet("RefreshToken")]
+    public async Task<ActionResult<string>> RefreshToken()
+    {
+        var refreshToken = Request.Cookies["X-Refresh-Token"];
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Unauthorized("No refresh token.");
+        }
+
+        var user = await _userRepository.FindByRefreshToken(refreshToken);
+        if (user == null || user.TokenExpires < DateTime.Now)
+        {
+            return Unauthorized("Token has expired.");
+        }
+
+        await DoAllTheTokenThings(user);
+
+        return Ok();
+    }
+
     private void SetJwt(string encrypterToken)
     {
         HttpContext.Response.Cookies.Append("X-Access-Token", encrypterToken,
               new CookieOptions
               {
-                  Expires = DateTime.Now.AddMinutes(15),
+                  Expires = DateTime.Now.AddDays(7), // todo: change to 15 minutes and refresh
                   HttpOnly = true,
                   Secure = true,
                   IsEssential = true,
@@ -101,6 +114,20 @@ public class AuthController : ControllerBase
                  IsEssential = true,
                  SameSite = SameSiteMode.None
              });
+    }
+
+    private async Task DoAllTheTokenThings(User user)
+    {
+        var token = _jwtTokenGenerator.Generate(user);
+        SetJwt(token.Token);
+
+        var refreshToken = GenerateRefreshToken();
+        SetRefreshToken(refreshToken);
+
+        user.Token = refreshToken.Token;
+        user.TokenCreated = refreshToken.Created;
+        user.TokenExpires = refreshToken.Expires;
+        await _userRepository.UpdateUser(user);
     }
 }
 

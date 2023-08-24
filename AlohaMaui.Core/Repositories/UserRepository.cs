@@ -6,9 +6,10 @@ namespace AlohaMaui.Core.Repositories
 {
     public interface IUserRepository
     {
-        Task<User> FindByEmail(string email);
+        Task<User?> FindByEmail(string email);
         Task<User> CreateUser(User user);
         Task UpdateUser(User user);
+        Task<User?> FindByRefreshToken(string refreshToken);
     }
 
     public class UserRepository : IUserRepository
@@ -25,6 +26,21 @@ namespace AlohaMaui.Core.Repositories
             var container = _containerProvider.GetContainer();
             var query = new QueryDefinition("SELECT TOP 1 * from users u WHERE StringEquals(u.email, @email)")
                     .WithParameter("@email", email);
+
+            using var iterator = container.GetItemQueryIterator<User>(query);
+            if (iterator.HasMoreResults)
+            {
+                var result = await iterator.ReadNextAsync();
+                return result.FirstOrDefault();
+            }
+            return null;
+        }
+
+        public async Task<User?> FindByRefreshToken(string refreshToken)
+        {
+            var container = _containerProvider.GetContainer();
+            var query = new QueryDefinition("SELECT TOP 1 * from users u WHERE u.token = @token")
+                    .WithParameter("@token", refreshToken);
 
             using var iterator = container.GetItemQueryIterator<User>(query);
             if (iterator.HasMoreResults)

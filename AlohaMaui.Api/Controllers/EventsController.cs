@@ -44,11 +44,33 @@ public class EventsController : BaseApiController
     }
 
     [Authorize(Policy = "AdminOnly")]
+    [HttpPut("{id}/status")]
+    public async Task<Event> ChangeStatus([FromRoute] Guid id, [FromBody] EventChangeStatusRequest request)
+    {
+        var cevent = await _eventRepository.Find(id);
+        cevent.Status = request.Status;
+        return await _eventRepository.Update(cevent);
+    }
+
+    [Authorize(Policy = "AdminOnly")]
     [HttpGet("pending")]
     public IEnumerable<Event> FindPending()
     {
         return _eventRepository.FindPendingEvents();
     }
+
+    [Authorize]
+    [HttpGet("my")]
+    public async Task<IActionResult> FindMyEvents()
+    {
+        if (!UserId.HasValue)
+        {
+            return Unauthorized();
+        }
+        var result = await _eventRepository.FindEventsForUser(UserId.Value);
+        return Ok(result);
+    }
+
 
     [HttpPost]
     [Authorize]
@@ -102,7 +124,7 @@ public class EventsController : BaseApiController
             {
                 var cover = image.Clone(x => x.Resize(new ResizeOptions
                 {
-                    Size = new Size(Math.Min(600, image.Width), Math.Min(image.Height, 300)),
+                    Size = new Size(Math.Min(1600, image.Width), Math.Min(image.Height, 800)),
                     Mode = ResizeMode.Max
                 }));
                 var coverPhoto = await UploadToBlobStorage(container, cover);
