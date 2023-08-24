@@ -29,7 +29,7 @@ public class HelloController : BaseApiController
     [HttpGet]
     public IActionResult Get()
     {        
-        return Ok(_configuration["AllowedHosts"]);
+        return Ok(_configuration["TestMessage"]);
     }
 }
 
