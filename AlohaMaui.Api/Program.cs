@@ -90,8 +90,10 @@ internal class Program
     private static void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         //app.UseAuthentication();
-
-        app.UseCors(AllowedOriginsPolicyName);
+        if (env.IsDevelopment())
+        {
+            app.UseCors(AllowedOriginsPolicyName);
+        }
 
         if (env.IsDevelopment())
         {
