@@ -121,9 +121,11 @@ internal class Program
         services.AddSingleton<ICosmosDatabaseProvider>(new CosmosDatabaseProvider(comsosDatabase, services.BuildServiceProvider().GetRequiredService<ICosmosClientProvider>()));
 
         services.AddSingleton<IEventRepository>(new EventRepository(
-            new CosmosContainerProvider(
-                "events",
-                services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
+            new CosmosContainerProvider("events", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
+        );
+
+        services.AddSingleton<IUserRepository>(new UserRepository(
+            new CosmosContainerProvider("users", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
         );
 
         var jwtSecret = configuration["Auth:JwtSecret"];

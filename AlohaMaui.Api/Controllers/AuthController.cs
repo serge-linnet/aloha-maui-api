@@ -1,8 +1,11 @@
 
 using AlohaMaui.Core.Entities;
+using AlohaMaui.Core.Repositories;
+using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
 
@@ -13,56 +16,57 @@ public class AuthController : ControllerBase
     private readonly ILogger<AuthController> _logger;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IGoogleAuthValidator _googleAuthValidator;
-    private static List<User> UserList = new List<User>()
-    {
-        new User() { Email = "serge@outlook.ie", Role = "Admin" }
-    };
+    private readonly IUserRepository _userRepository;
 
-    public AuthController(ILogger<AuthController> logger, IJwtTokenGenerator jwtTokenGenerator, IGoogleAuthValidator googleAuthValidator)
+    public AuthController(ILogger<AuthController> logger, IJwtTokenGenerator jwtTokenGenerator, IGoogleAuthValidator googleAuthValidator, IUserRepository userRepository)
     {
         _logger = logger;
         _jwtTokenGenerator = jwtTokenGenerator;
         _googleAuthValidator = googleAuthValidator;
+        _userRepository = userRepository;
     }
 
     [HttpPost("LoginWithGoogle")]
     public async Task<IActionResult> LoginWithGoogle([FromBody] string credentials)
     {
         var payload = await _googleAuthValidator.Validate(credentials);
-        
-        var user = UserList.Where(x => x.Email == payload.Email).FirstOrDefault();
 
+        Guard.Against.Null(payload, nameof(payload));
+        Guard.Against.Null(payload.Email, nameof(payload.Email));
+
+        var user = await _userRepository.FindByEmail(payload.Email);
         if (user == null)
         {
-            user = new User()
-            {
-                Email = payload.Email,
-                Role = "User",
-                Name = payload.Name
-            };
+            user = new User(payload.Email, Role.User);
+            user = await _userRepository.CreateUser(user);
         }
 
-        if (user != null)
-        {
-            var token = _jwtTokenGenerator.Generate(user);
-            SetJwt(token.Token);
+        var token = _jwtTokenGenerator.Generate(user);
+        SetJwt(token.Token);
 
-            var refreshToken = GenerateRefreshToken();
-            SetRefreshToken(refreshToken, user);
+        var refreshToken = GenerateRefreshToken();
+        SetRefreshToken(refreshToken);
 
-            return Ok(user);
-        }
-        else
-        {
-            return BadRequest();
-        }
+        user.Token = refreshToken.Token;
+        user.TokenCreated = refreshToken.Created;
+        user.TokenExpires = refreshToken.Expires;
+        await _userRepository.UpdateUser(user);
+
+        return Ok(user);
     }
 
+    [HttpPost]
+    [Authorize]
+    public IActionResult Logout()
+    {
+        HttpContext.Response.Cookies.Delete("X-Access-Token");
+        HttpContext.Response.Cookies.Delete("X-Refresh-Token");
 
+        return Ok();
+    }
 
     private void SetJwt(string encrypterToken)
     {
-
         HttpContext.Response.Cookies.Append("X-Access-Token", encrypterToken,
               new CookieOptions
               {
@@ -86,7 +90,7 @@ public class AuthController : ControllerBase
         return refreshToken;
     }
 
-    private void SetRefreshToken(RefreshToken refreshToken, User user)
+    private void SetRefreshToken(RefreshToken refreshToken)
     {
         HttpContext.Response.Cookies.Append("X-Refresh-Token", refreshToken.Token,
              new CookieOptions
@@ -97,10 +101,6 @@ public class AuthController : ControllerBase
                  IsEssential = true,
                  SameSite = SameSiteMode.None
              });
-
-        UserList.Where(x => x.Email == user.Email).First().Token = refreshToken.Token;
-        UserList.Where(x => x.Email == user.Email).First().TokenCreated = refreshToken.Created;
-        UserList.Where(x => x.Email == user.Email).First().TokenExpires = refreshToken.Expires;
     }
 }
 
