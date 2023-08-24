@@ -29,7 +29,7 @@ public class HelloController : BaseApiController
     [HttpGet]
     public IActionResult Get()
     {        
-        return Ok(_configuration["TestMessage"]);
+        return Ok("hello from " + _configuration["Test:Message"]);
     }
 }
 
