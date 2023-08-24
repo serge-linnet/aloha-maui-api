@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>AlohaMaui.Api</RootNamespace>
     <UserSecretsId>e90185b2-9285-403f-a156-ebd94a4a9c6e</UserSecretsId>
+    <StartupObject>Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
