@@ -18,16 +18,18 @@ namespace AlohaMaui.Api.Controllers;
 public class HelloController : BaseApiController
 {
     private readonly ILogger<HelloController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public HelloController(ILogger<HelloController> logger)
+    public HelloController(ILogger<HelloController> logger, IConfiguration configuration)
     {
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpGet]
     public IActionResult Get()
-    {
-        return Ok();
+    {        
+        return Ok(_configuration["AllowedHosts"]);
     }
 }
 
