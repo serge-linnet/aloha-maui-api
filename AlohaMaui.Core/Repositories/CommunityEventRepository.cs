@@ -88,7 +88,7 @@ namespace AlohaMaui.Core.Repositories
         public async Task<CommunityEvent> CreateEvent(CommunityEvent entity)
         {
             var container = _containerProvider.GetContainer();
-            var newEntity = await container.CreateItemAsync(entity, new PartitionKey(entity.Type.ToString()));
+            var newEntity = await container.CreateItemAsync(entity, new PartitionKey(entity.Id.ToString()));
             return newEntity;
         }
 
