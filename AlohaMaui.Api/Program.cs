@@ -8,48 +8,24 @@ using AlohaMaui.Core.Providers;
 
 internal class Program
 {
+    const string AllowedOriginsPolicyName = "AllowedOrigins";
+
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
-#if DEBUG
-        builder.Services.AddCors(options =>
-        {
-            var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"];
-            Guard.Against.NullOrEmpty(allowedOrigins, nameof(allowedOrigins));
-            options.AddDefaultPolicy(policy =>
-            {
-                policy.WithOrigins(allowedOrigins.Split(";"))
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials();
-            });
-        });
-#endif
-        AddDataServices(builder.Services, builder.Configuration);
-        AddAuth(builder.Services, builder.Configuration);
-
-        builder.Services.AddControllers();
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        var configuration = builder.Configuration;
+        ConfigureServices(builder.Services, configuration);
+        ConfigureAuth(builder.Services, configuration);
 
         var app = builder.Build();
+        Configure(app, app.Environment);
 
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-        app.UseAuthorization();
-        app.UseAuthentication();
-        app.UseCors();
         app.MapControllers();
+
         app.Run();
     }
 
-    private static void AddAuth(IServiceCollection services, ConfigurationManager configuration)
+    private static void ConfigureAuth(IServiceCollection services, ConfigurationManager configuration)
     {
         var jwtSecret = configuration["Auth:JwtSecret"];
         Guard.Against.NullOrEmpty(jwtSecret, nameof(jwtSecret));
@@ -87,6 +63,49 @@ internal class Program
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
         });
+    }
+
+    private static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration)
+    {
+#if DEBUG // CORS is handled by Azure in production
+        services.AddCors(options =>
+        {
+            var allowedHosts = configuration["Cors:AllowedOrigins"];
+            Guard.Against.NullOrEmpty(allowedHosts, nameof(allowedHosts));
+            options.AddPolicy(name: AllowedOriginsPolicyName, builder =>
+            {
+                builder.WithOrigins(allowedHosts.Split(';'))
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+#endif
+
+        services.AddControllers();
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen();
+
+        AddDataServices(services, configuration);
+    }
+
+    private static void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        //app.UseAuthentication();
+        app.UseCors(AllowedOriginsPolicyName);
+
+        if (env.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+        app.UseRouting();
+        app.UseAuthentication();
+        app.UseAuthorization();
     }
 
     private static void AddDataServices(IServiceCollection services, ConfigurationManager configuration)
