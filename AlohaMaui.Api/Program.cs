@@ -67,7 +67,6 @@ internal class Program
 
     private static void ConfigureServices(IServiceCollection services, ConfigurationManager configuration)
     {
-#if DEBUG
         services.AddCors(options =>
         {
             var allowedHosts = configuration["AllowedHosts"];
@@ -80,7 +79,7 @@ internal class Program
                                 .AllowCredentials();
                         });
         });
-#endif
+
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
@@ -91,10 +90,7 @@ internal class Program
     private static void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         //app.UseAuthentication();
-        if (env.IsDevelopment())
-        {
-            app.UseCors(AllowedOriginsPolicyName);
-        }
+        app.UseCors(AllowedOriginsPolicyName);
 
         if (env.IsDevelopment())
         {
@@ -123,7 +119,7 @@ internal class Program
         Guard.Against.NullOrEmpty(comsosDatabase, nameof(comsosDatabase));
         services.AddSingleton<ICosmosDatabaseProvider>(new CosmosDatabaseProvider(comsosDatabase, services.BuildServiceProvider().GetRequiredService<ICosmosClientProvider>()));
 
-        services.AddSingleton<IEventRepository>(new EventRepository(
+        services.AddSingleton<ICommunityEventRepository>(new CommunityEventRepository(
             new CosmosContainerProvider("events", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
         );
 
