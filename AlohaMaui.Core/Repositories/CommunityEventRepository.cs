@@ -43,20 +43,26 @@ namespace AlohaMaui.Core.Repositories
                 "SELECT * from events e " +
                 "WHERE " +
                 "   e.type = @type" +
-                "   AND e.status = @status" +
-                "   AND (@from = null OR e.startsAt >= @from)" +
-                "   AND (@to = null OR e.endAt <= @to)" +
-                "   AND (@familyFriendly = null OR e.familyFriendly = @familyFriendly)" +
-                "   AND (@country = null OR e.place.countryCode = @country)")
-                .WithParameter("@type", EventType.Community.ToString())
+                "   AND e.Status = @status"  +
+                "   AND (IS_NULL(@from) OR e.StartsAt >= @from)" +
+                "   AND (IS_NULL(@to) OR e.EndsAt <= @to)" +
+                "   AND (IS_NULL(@familyFriendly) OR e.FamilyFriendly = @familyFriendly)"  +
+                "   AND (IS_NULL(@country) OR e.Place.CountryCode = @country)"
+                )
+                .WithParameter("@type", EventType.Community)
                 .WithParameter("@status", CommunityEventStatus.Approved)
                 .WithParameter("@from", filter.From)
                 .WithParameter("@to", filter.To?.Date)
                 .WithParameter("@familyFriendly", filter.FamilyFriendly)
                 .WithParameter("@country", filter.Country);
 
+
+
             var results = new List<CommunityEvent>();
+
+            //queryable.ToQueryDefinition().QueryTex
             using var iterator = container.GetItemQueryIterator<CommunityEvent>(query);
+            
             while (iterator.HasMoreResults)
             {
                 foreach (var item in await iterator.ReadNextAsync())
