@@ -12,6 +12,7 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+#if DEBUG
         builder.Services.AddCors(options =>
         {
             var allowedOrigins = builder.Configuration["Cors:AllowedOrigins"];
@@ -24,7 +25,7 @@ internal class Program
                     .AllowCredentials();
             });
         });
-
+#endif
         AddDataServices(builder.Services, builder.Configuration);
         AddAuth(builder.Services, builder.Configuration);
 
