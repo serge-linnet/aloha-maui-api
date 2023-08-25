@@ -4,10 +4,10 @@ namespace AlohaMaui.Core.Entities
 {
     public class EventAssets
     {
-        [JsonProperty(PropertyName = "coverPhoto")]
+        [JsonProperty]
         public string? CoverPhoto { get; set; }
 
-        [JsonProperty(PropertyName = "thumbnail")]
+        [JsonProperty]
         public string? Thumbnail { get; set; }
     }
 }

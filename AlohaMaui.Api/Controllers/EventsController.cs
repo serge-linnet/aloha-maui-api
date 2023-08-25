@@ -1,15 +1,11 @@
 using AlohaMaui.Api.Models;
 using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Repositories;
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos;
 using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp;
 using Azure.Storage.Blobs;
-using Microsoft.Extensions.Azure;
-using Azure.Storage.Blobs.Models;
+using AlohaMaui.Core.Queries;
 
 namespace AlohaMaui.Api.Controllers;
 
@@ -18,11 +14,11 @@ namespace AlohaMaui.Api.Controllers;
 public class EventsController : BaseApiController
 {
     private readonly ILogger<EventsController> _logger;
-    private readonly IEventRepository _eventRepository;
+    private readonly ICommunityEventRepository _eventRepository;
     private readonly IUserRepository _userRepository;
     private readonly IBlobServiceClientProvider _blobServiceClientProvider;
 
-    public EventsController(ILogger<EventsController> logger, IEventRepository eventRepository, IUserRepository userRepository, IBlobServiceClientProvider blobServiceClientProvider)
+    public EventsController(ILogger<EventsController> logger, ICommunityEventRepository eventRepository, IUserRepository userRepository, IBlobServiceClientProvider blobServiceClientProvider)
     {
         _logger = logger;
         _eventRepository = eventRepository;
@@ -31,21 +27,22 @@ public class EventsController : BaseApiController
     }
 
     [HttpGet]
-    public IEnumerable<Event> Find(string? query = "")
+    public async Task<IEnumerable<CommunityEvent>> Find(FindPublicEventsQuery? query)
     {
-        var result = _eventRepository.FindEvents(query);
+        query = new FindPublicEventsQuery();
+        var result = await _eventRepository.FindPublicEvents(query);
         return result;
     }
 
     [HttpGet("{id}/details")]
-    public async Task<Event> FindById([FromRoute] Guid id)
+    public async Task<CommunityEvent> FindById([FromRoute] Guid id)
     {
         return await _eventRepository.Find(id);
     }
 
     [Authorize(Policy = "AdminOnly")]
     [HttpPut("{id}/status")]
-    public async Task<Event> ChangeStatus([FromRoute] Guid id, [FromBody] EventChangeStatusRequest request)
+    public async Task<CommunityEvent> ChangeStatus([FromRoute] Guid id, [FromBody] EventChangeStatusRequest request)
     {
         var cevent = await _eventRepository.Find(id);
         cevent.Status = request.Status;
@@ -54,7 +51,7 @@ public class EventsController : BaseApiController
 
     [Authorize(Policy = "AdminOnly")]
     [HttpGet("pending")]
-    public IEnumerable<Event> FindPending()
+    public IEnumerable<CommunityEvent> FindPending()
     {
         return _eventRepository.FindPendingEvents();
     }
@@ -70,7 +67,6 @@ public class EventsController : BaseApiController
         var result = await _eventRepository.FindEventsForUser(UserId.Value);
         return Ok(result);
     }
-
 
     [HttpPost]
     [Authorize]
@@ -164,6 +160,5 @@ public class EventsController : BaseApiController
         public string? CoverPhoto { get; set; }
         public string? Thumbnail { get; set; }
     }
-
 }
 

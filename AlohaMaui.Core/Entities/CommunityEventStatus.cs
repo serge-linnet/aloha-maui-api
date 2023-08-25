@@ -1,6 +1,6 @@
 ﻿namespace AlohaMaui.Core.Entities
 {
-    public enum EventStatus
+    public enum CommunityEventStatus
     {
         Pending = 0,
         Approved = 1,

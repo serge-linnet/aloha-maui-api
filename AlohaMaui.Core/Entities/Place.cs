@@ -4,28 +4,34 @@ namespace AlohaMaui.Core.Entities
 {
     public class Place
     {
-        [JsonProperty(PropertyName = "address")]
+        [JsonProperty]
+        public string? PlaceName { get; set; }
+
+        [JsonProperty]
         public string? Address { get; set; }
 
-        [JsonProperty(PropertyName = "postcode")]
+        [JsonProperty]
         public string? Postcode { get; set; }
 
-        [JsonProperty(PropertyName = "locality")]
+        [JsonProperty]
         public string? Locality { get; set; }
 
-        [JsonProperty(PropertyName = "region")]
+        [JsonProperty]
         public string? Region { get; set; }
 
-        [JsonProperty(PropertyName = "country")]
+        [JsonProperty]
         public string? Country { get; set; }
 
-        [JsonProperty(PropertyName = "latitude")]
+        [JsonProperty]
+        public string? CountryCode { get; set; }
+
+        [JsonProperty]
         public double? Latitude { get; set; }
 
-        [JsonProperty(PropertyName = "longitude")]
+        [JsonProperty]
         public double? Longitude { get; set; }
 
-        [JsonProperty(PropertyName = "metadata")]
+        [JsonProperty]
         public PlaceMetadata? Metadata { get; set; }
     }
 

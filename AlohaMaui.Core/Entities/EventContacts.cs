@@ -4,19 +4,19 @@ namespace AlohaMaui.Core.Entities
 {
     public class EventContacts
     {
-        [JsonProperty(PropertyName = "instagram")]
+        [JsonProperty]
         public string? Instagram { get; set; }
 
         [JsonProperty(PropertyName = "facebook")]
         public string? Facebook { get; set; }
 
-        [JsonProperty(PropertyName = "contactEmail")]
+        [JsonProperty]
         public string? ContactEmail { get; set; }
 
-        [JsonProperty(PropertyName = "contactPhone")]
+        [JsonProperty]
         public string? ContactPhone { get; set; }
 
-        [JsonProperty(PropertyName = "website")]
+        [JsonProperty]
         public string? Website { get; set; }
     }
 }

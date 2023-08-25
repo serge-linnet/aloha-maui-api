@@ -10,16 +10,16 @@ namespace AlohaMaui.Core.Entities
         [JsonProperty(PropertyName = "email")]
         public string Email { get; set; }
 
-        [JsonProperty(PropertyName = "role")]
+        [JsonProperty]
         public string Role { get; set; }
 
-        [JsonProperty(PropertyName = "token")]
+        [JsonProperty]
         public string Token { get; set; }
 
-        [JsonProperty(PropertyName = "tokenCreated")]
+        [JsonProperty]
         public DateTime TokenCreated { get; set; }
 
-        [JsonProperty(PropertyName = "tokenExpires")]
+        [JsonProperty]
         public DateTime TokenExpires { get; set; }
 
         public User()
