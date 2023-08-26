@@ -12,8 +12,9 @@ public class HelloController : BaseApiController
 
     [HttpGet]
     public IActionResult Get()
-    {        
-        return Ok();
+    {
+        var version = GetType().Assembly.GetName()?.Version?.ToString();
+        return Ok(version);
     }
 }
 
