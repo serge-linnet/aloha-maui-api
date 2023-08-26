@@ -1,6 +1,6 @@
-﻿namespace AlohaMaui.Core.Queries
+﻿namespace AlohaMaui.Core.Filters
 {
-    public class FindPublicEventsQuery
+    public class PublicCommunityEventsFilter
     {
         public DateTime From { get; set; } = DateTime.UtcNow.Date;
         public DateTime? To { get; set; }

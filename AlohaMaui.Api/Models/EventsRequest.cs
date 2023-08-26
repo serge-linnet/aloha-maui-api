@@ -8,22 +8,21 @@ namespace AlohaMaui.Api.Models
         public string Title { get; set; }
         public string Description { get; set; }
         public string? Category { get; set; } = "other";
-        public decimal? Price { get; set; }
+        public decimal Price { get; set; }
         public string Currency { get; set; }
         public string Photo { get; set; }
-        public DateTime? StartsAt { get; set; }
-        public DateTime? EndsAt { get; set; }
-        public Place Place { get; set; }
-        public CommunityEventStatus Status { get; set; }
-        public bool? IsOffline { get; set; }
-        public string OnlineDetails { get; set; }
+        public DateTime StartsAt { get; set; }
+        public DateTime EndsAt { get; set; }
+        public Place? Place { get; set; }
+        public bool IsOffline { get; set; }
+        public string? OnlineDetails { get; set; }
         public bool? FamilyFriendly { get; set; }
         public bool? DogFriendly { get; set; }
-        public string Instagram { get; set; }
-        public string Facebook { get; set; }
+        public string? Instagram { get; set; }
+        public string? Facebook { get; set; }
         public string ContactEmail { get; set; }
-        public string ContactPhone { get; set; }
-        public string Website { get; set; }
+        public string? ContactPhone { get; set; }
+        public string? Website { get; set; }
 
         public CommunityEvent ToEvent()
         {
@@ -38,7 +37,6 @@ namespace AlohaMaui.Api.Models
                 StartsAt = StartsAt,
                 EndsAt = EndsAt,
                 Place = Place,
-                Status = Status,
                 IsOffline = IsOffline,
                 OnlineDetails = OnlineDetails,
                 FamilyFriendly = FamilyFriendly,

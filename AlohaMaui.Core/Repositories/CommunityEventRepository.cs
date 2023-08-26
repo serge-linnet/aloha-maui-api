@@ -1,6 +1,6 @@
 ﻿using AlohaMaui.Core.Entities;
+using AlohaMaui.Core.Filters;
 using AlohaMaui.Core.Providers;
-using AlohaMaui.Core.Queries;
 using Microsoft.Azure.Cosmos;
 using static AlohaMaui.Core.Repositories.CommunityEventRepository;
 
@@ -10,7 +10,7 @@ namespace AlohaMaui.Core.Repositories
     public interface ICommunityEventRepository
     {
         Task<CommunityEvent> Find(Guid id);
-        Task<IEnumerable<CommunityEvent>> FindPublicEvents(FindPublicEventsQuery filter);
+        Task<IEnumerable<CommunityEvent>> FindPublicEvents(PublicCommunityEventsFilter filter);
         IEnumerable<CommunityEvent> FindEvents(string query);
         IEnumerable<CommunityEvent> FindPendingEvents();
         Task<CommunityEvent> CreateEvent(CommunityEvent entity);
@@ -36,7 +36,7 @@ namespace AlohaMaui.Core.Repositories
 
         
 
-        public async Task<IEnumerable<CommunityEvent>> FindPublicEvents(FindPublicEventsQuery filter)
+        public async Task<IEnumerable<CommunityEvent>> FindPublicEvents(PublicCommunityEventsFilter filter)
         {
             var container = _containerProvider.GetContainer();
             var query = new QueryDefinition("" +
@@ -73,7 +73,7 @@ namespace AlohaMaui.Core.Repositories
             return results;
         }
 
-        [Obsolete]
+        [Obsolete] 
         public IEnumerable<CommunityEvent> FindEvents(string query)
         {
             var container = _containerProvider.GetContainer();
@@ -101,7 +101,7 @@ namespace AlohaMaui.Core.Repositories
         public async Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId)
         {
             var container = _containerProvider.GetContainer();
-            var query = new QueryDefinition("SELECT * from events e WHERE e.userId = @id")
+            var query = new QueryDefinition("SELECT * from events e WHERE e.UserId = @id")
                     .WithParameter("@id", userId);
 
             var results = new List<CommunityEvent>();

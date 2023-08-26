@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AlohaMaui.Core.Repositories;
 using AlohaMaui.Core.Providers;
+using AlohaMaui.Core.Entities;
 
 internal class Program
 {
@@ -81,6 +82,9 @@ internal class Program
             });
         });
 #endif
+
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CommunityEvent).Assembly));
 
         services.AddControllers();
         services.AddEndpointsApiExplorer();

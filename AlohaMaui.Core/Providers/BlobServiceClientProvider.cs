@@ -1,6 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 
-namespace AlohaMaui.Api
+namespace AlohaMaui.Core.Providers
 {
     public interface IBlobServiceClientProvider
     {
