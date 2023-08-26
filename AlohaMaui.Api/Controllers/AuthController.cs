@@ -6,6 +6,7 @@ using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System.Security.Cryptography;
 using System.Text;
 using User = AlohaMaui.Core.Entities.User;
@@ -22,9 +23,9 @@ public class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _config;
 
-    public AuthController(ILogger<AuthController> logger, 
-        IJwtTokenGenerator jwtTokenGenerator, 
-        IGoogleAuthValidator googleAuthValidator, 
+    public AuthController(ILogger<AuthController> logger,
+        IJwtTokenGenerator jwtTokenGenerator,
+        IGoogleAuthValidator googleAuthValidator,
         IUserRepository userRepository,
         IConfiguration config)
     {
@@ -36,7 +37,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("LoginWithGoogleRedirect")]
-    
+
     public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
     {
         var user = await AuthenticateWithGoogle(form.Credential);
@@ -44,10 +45,13 @@ public class AuthController : ControllerBase
         var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
         Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
 
-        var userJson = JsonConvert.SerializeObject(user);
+        var userJson = JsonConvert.SerializeObject(user, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver()
+        });
         var userBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(userJson));
 
-        return Redirect($"{redirectUrl}?usr={userBase64}");
+        return Redirect($"{redirectUrl}?{userBase64}");
     }
 
     [HttpPost("LoginWithGoogle")]
