@@ -40,8 +40,9 @@ public class AuthController : ControllerBase
 
     public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
     {
+        _logger.LogInformation($"LoginWithGoogleRedirect");
         var user = await AuthenticateWithGoogle(form.Credential);
-
+        _logger.LogInformation($"LoginWithGoogleRedirect.AuthenticateWithGoogle", user.Id);
         var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
         Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
 
@@ -57,8 +58,9 @@ public class AuthController : ControllerBase
     [HttpPost("LoginWithGoogle")]
     public async Task<IActionResult> LoginWithGoogle([FromBody] string credentials)
     {
+        _logger.LogInformation($"LoginWithGoogle");
         var user = await AuthenticateWithGoogle(credentials);
-
+        _logger.LogInformation($"AuthenticateWithGoogle.AuthenticateWithGoogle", user.Id);
         return Ok(user);
     }
 
