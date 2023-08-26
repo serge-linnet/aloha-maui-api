@@ -8,8 +8,8 @@ namespace AlohaMaui.Api.Models
         public string Title { get; set; }
         public string Description { get; set; }
         public string? Category { get; set; } = "other";
-        public decimal Price { get; set; }
-        public string Currency { get; set; }
+        public decimal? Price { get; set; }
+        public string? Currency { get; set; }
         public string Photo { get; set; }
         public DateTime StartsAt { get; set; }
         public DateTime EndsAt { get; set; }
