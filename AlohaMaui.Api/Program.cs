@@ -137,6 +137,8 @@ internal class Program
         Guard.Against.NullOrEmpty(jwtSecret, nameof(jwtSecret));
         services.AddSingleton<IJwtTokenGenerator>(new JwtTokenGenerator(jwtSecret));
 
+        services.AddSingleton<IPasswordHasher>(new PasswordHasher(configuration["Auth:PasswordSalt"]));
+
         var googleClientId = configuration["Auth:Google:ClientId"];
         Guard.Against.NullOrEmpty(googleClientId, nameof(googleClientId));
         services.AddSingleton<IGoogleAuthValidator>(new GoogleAuthValidator(googleClientId));

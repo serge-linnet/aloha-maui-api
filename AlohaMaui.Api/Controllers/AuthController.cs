@@ -1,14 +1,9 @@
 
 using AlohaMaui.Api.Models;
-using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Repositories;
-using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using System.Security.Cryptography;
-using System.Text;
 using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
@@ -22,48 +17,90 @@ public class AuthController : ControllerBase
     private readonly IGoogleAuthValidator _googleAuthValidator;
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _config;
+    private readonly IPasswordHasher _hasher;
 
     public AuthController(ILogger<AuthController> logger,
         IJwtTokenGenerator jwtTokenGenerator,
         IGoogleAuthValidator googleAuthValidator,
         IUserRepository userRepository,
-        IConfiguration config)
+        IConfiguration config,
+        IPasswordHasher hasher)
     {
         _logger = logger;
         _jwtTokenGenerator = jwtTokenGenerator;
         _googleAuthValidator = googleAuthValidator;
         _userRepository = userRepository;
         _config = config;
+        _hasher = hasher;
     }
 
-    [HttpPost("LoginWithGoogleRedirect")]
-
-    public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
+    [HttpPost("SignIn")]
+    public async Task<IActionResult> SignIn([FromBody] SignInRequest model)
     {
-        _logger.LogInformation($"LoginWithGoogleRedirect");
-        var user = await AuthenticateWithGoogle(form.Credential);
-        _logger.LogInformation($"LoginWithGoogleRedirect.AuthenticateWithGoogle", user.Id);
-        var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
-        Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
+        _logger.LogInformation($"SignIn");
+        var user = await _userRepository.FindByEmail(model.Email);
 
-        var userJson = JsonConvert.SerializeObject(user, new JsonSerializerSettings
+        if (user == null || _hasher.HashPassword(model.Email, model.Password) != user.PasswordHash)
         {
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        });
-        var userBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(userJson));
+            _logger.LogInformation($"SignIn:Fail-NotExists", model.Email);
+            return BadRequest("User with this email and password does not exist.");
+        }
 
-        return Redirect($"{redirectUrl}?{userBase64}");
+        var token = _jwtTokenGenerator.Generate(user);
+        SetJwt(token.Token);
+
+        var refreshToken = GenerateRefreshToken();
+        SetRefreshToken(refreshToken);
+
+        user.Token = refreshToken.Token;
+        user.TokenCreated = refreshToken.Created;
+        user.TokenExpires = refreshToken.Expires;
+
+        await _userRepository.UpdateUser(user);
+
+        _logger.LogInformation($"SignIn:Success", model.Email);
+
+        return Ok(new UserInfo(user));
     }
 
-    [HttpPost("LoginWithGoogle")]
-    public async Task<IActionResult> LoginWithGoogle([FromBody] string credentials)
+    [HttpPost("SignUp")]
+    public async Task<IActionResult> SignUp([FromBody] SignUpRequest model)
     {
-        _logger.LogInformation($"LoginWithGoogle");
-        var user = await AuthenticateWithGoogle(credentials);
-        _logger.LogInformation($"AuthenticateWithGoogle.AuthenticateWithGoogle", user.Id);
-        return Ok(user);
-    }
+        _logger.LogInformation($"SignUp", model.Email);
+        var user = await _userRepository.FindByEmail(model.Email);
 
+        if (user != null)
+        {
+            _logger.LogInformation($"SignUp:Fail-AlreadyExists", model.Email);
+            return BadRequest("User with this email and password already exist.");
+        }
+
+        user = new User()
+        {
+            Email = model.Email,
+            PasswordHash = _hasher.HashPassword(model.Email, model.Password),
+            Created = DateTime.Now,
+            Updated = DateTime.Now,
+            Id = Guid.NewGuid(),
+            Role = "User"
+        };
+
+        var token = _jwtTokenGenerator.Generate(user);
+        SetJwt(token.Token);
+
+        var refreshToken = GenerateRefreshToken();
+        SetRefreshToken(refreshToken);
+
+        user.Token = refreshToken.Token;
+        user.TokenCreated = refreshToken.Created;
+        user.TokenExpires = refreshToken.Expires;
+
+        await _userRepository.CreateUser(user);
+
+        _logger.LogInformation($"SignUp.Success", model.Email);
+
+        return Ok(new UserInfo(user));
+    }
 
     [HttpPost]
     [Authorize]
@@ -75,25 +112,25 @@ public class AuthController : ControllerBase
         return Ok();
     }
 
-    [HttpGet("RefreshToken")]
-    public async Task<ActionResult<string>> RefreshToken()
-    {
-        var refreshToken = Request.Cookies["X-Refresh-Token"];
-        if (string.IsNullOrWhiteSpace(refreshToken))
-        {
-            return Unauthorized("No refresh token.");
-        }
+    //[HttpGet("RefreshToken")]
+    //public async Task<ActionResult<string>> RefreshToken()
+    //{
+    //    var refreshToken = Request.Cookies["X-Refresh-Token"];
+    //    if (string.IsNullOrWhiteSpace(refreshToken))
+    //    {
+    //        return Unauthorized("No refresh token.");
+    //    }
 
-        var user = await _userRepository.FindByRefreshToken(refreshToken);
-        if (user == null || user.TokenExpires < DateTime.Now)
-        {
-            return Unauthorized("Token has expired.");
-        }
+    //    var user = await _userRepository.FindByRefreshToken(refreshToken);
+    //    if (user == null || user.TokenExpires < DateTime.Now)
+    //    {
+    //        return Unauthorized("Token has expired.");
+    //    }
 
-        await DoAllTheTokenThings(user);
+    //    await DoAllTheTokenThings(user);
 
-        return Ok();
-    }
+    //    return Ok();
+    //}
 
     private void SetJwt(string encrypterToken)
     {
@@ -106,25 +143,6 @@ public class AuthController : ControllerBase
                   IsEssential = true,
                   SameSite = SameSiteMode.None
               });
-    }
-
-    private async Task<User> AuthenticateWithGoogle(string credentials)
-    {
-        var payload = await _googleAuthValidator.Validate(credentials);
-
-        Guard.Against.Null(payload, nameof(payload));
-        Guard.Against.Null(payload.Email, nameof(payload.Email));
-
-        var user = await _userRepository.FindByEmail(payload.Email);
-        if (user == null)
-        {
-            user = new User(payload.Email, Role.User);
-            user = await _userRepository.CreateUser(user);
-        }
-
-        await DoAllTheTokenThings(user);
-
-        return user;
     }
 
     private RefreshToken GenerateRefreshToken()
@@ -151,25 +169,4 @@ public class AuthController : ControllerBase
                  SameSite = SameSiteMode.None
              });
     }
-
-    private async Task DoAllTheTokenThings(User user)
-    {
-        var token = _jwtTokenGenerator.Generate(user);
-        SetJwt(token.Token);
-
-        var refreshToken = GenerateRefreshToken();
-        SetRefreshToken(refreshToken);
-
-        user.Token = refreshToken.Token;
-        user.TokenCreated = refreshToken.Created;
-        user.TokenExpires = refreshToken.Expires;
-        await _userRepository.UpdateUser(user);
-    }
-}
-
-public class RefreshToken
-{
-    public string Token { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Expires { get; set; }
 }

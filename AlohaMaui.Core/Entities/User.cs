@@ -21,6 +21,9 @@ namespace AlohaMaui.Core.Entities
 
         [JsonProperty]
         public DateTime TokenExpires { get; set; }
+        public string PasswordHash { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime Updated { get; set; }
 
         public User()
         {
