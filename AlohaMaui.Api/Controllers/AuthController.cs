@@ -1,4 +1,5 @@
 
+using AlohaMaui.Api.Models;
 using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Repositories;
 using Ardalis.GuardClauses;
@@ -8,11 +9,6 @@ using System.Security.Cryptography;
 using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
-
-public class GooggleAuthRedirectFormRequest
-{
-    public string Credentials { get; set; }
-}
 
 [ApiController]
 [Route("[controller]")]
@@ -41,7 +37,7 @@ public class AuthController : ControllerBase
     
     public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
     {
-        var user = await AuthenticateWithGoogle(form.Credentials);
+        var user = await AuthenticateWithGoogle(form.Credential);
         var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
         Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
         return Redirect(redirectUrl);
