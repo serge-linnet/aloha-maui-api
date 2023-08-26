@@ -5,7 +5,9 @@ using AlohaMaui.Core.Repositories;
 using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Security.Cryptography;
+using System.Text;
 using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
@@ -38,9 +40,14 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
     {
         var user = await AuthenticateWithGoogle(form.Credential);
+
         var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
         Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
-        return Redirect(redirectUrl);
+
+        var userJson = JsonConvert.SerializeObject(user);
+        var userBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(userJson));
+
+        return Redirect($"{redirectUrl}?usr={userBase64}");
     }
 
     [HttpPost("LoginWithGoogle")]
