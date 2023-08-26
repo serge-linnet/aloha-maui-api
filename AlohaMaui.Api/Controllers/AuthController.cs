@@ -4,11 +4,15 @@ using AlohaMaui.Core.Repositories;
 using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Cosmos;
 using System.Security.Cryptography;
 using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
+
+public class GooggleAuthRedirectFormRequest
+{
+    public string Credentials { get; set; }
+}
 
 [ApiController]
 [Route("[controller]")]
@@ -18,31 +22,35 @@ public class AuthController : ControllerBase
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IGoogleAuthValidator _googleAuthValidator;
     private readonly IUserRepository _userRepository;
+    private readonly IConfiguration _config;
 
-    public AuthController(ILogger<AuthController> logger, IJwtTokenGenerator jwtTokenGenerator, IGoogleAuthValidator googleAuthValidator, IUserRepository userRepository)
+    public AuthController(ILogger<AuthController> logger, 
+        IJwtTokenGenerator jwtTokenGenerator, 
+        IGoogleAuthValidator googleAuthValidator, 
+        IUserRepository userRepository,
+        IConfiguration config)
     {
         _logger = logger;
         _jwtTokenGenerator = jwtTokenGenerator;
         _googleAuthValidator = googleAuthValidator;
         _userRepository = userRepository;
+        _config = config;
+    }
+
+    [HttpPost("LoginWithGoogleRedirect")]
+    
+    public async Task<IActionResult> LoginWithGoogleRedirect([FromForm] GooggleAuthRedirectFormRequest form)
+    {
+        var user = await AuthenticateWithGoogle(form.Credentials);
+        var redirectUrl = _config.GetValue<string>("UiRedirectUrl");
+        Guard.Against.NullOrWhiteSpace(redirectUrl, nameof(redirectUrl));
+        return Redirect(redirectUrl);
     }
 
     [HttpPost("LoginWithGoogle")]
     public async Task<IActionResult> LoginWithGoogle([FromBody] string credentials)
     {
-        var payload = await _googleAuthValidator.Validate(credentials);
-
-        Guard.Against.Null(payload, nameof(payload));
-        Guard.Against.Null(payload.Email, nameof(payload.Email));
-
-        var user = await _userRepository.FindByEmail(payload.Email);
-        if (user == null)
-        {
-            user = new User(payload.Email, Role.User);
-            user = await _userRepository.CreateUser(user);
-        }
-
-        await DoAllTheTokenThings(user);
+        var user = await AuthenticateWithGoogle(credentials);
 
         return Ok(user);
     }
@@ -89,6 +97,25 @@ public class AuthController : ControllerBase
                   IsEssential = true,
                   SameSite = SameSiteMode.None
               });
+    }
+
+    private async Task<User> AuthenticateWithGoogle(string credentials)
+    {
+        var payload = await _googleAuthValidator.Validate(credentials);
+
+        Guard.Against.Null(payload, nameof(payload));
+        Guard.Against.Null(payload.Email, nameof(payload.Email));
+
+        var user = await _userRepository.FindByEmail(payload.Email);
+        if (user == null)
+        {
+            user = new User(payload.Email, Role.User);
+            user = await _userRepository.CreateUser(user);
+        }
+
+        await DoAllTheTokenThings(user);
+
+        return user;
     }
 
     private RefreshToken GenerateRefreshToken()
