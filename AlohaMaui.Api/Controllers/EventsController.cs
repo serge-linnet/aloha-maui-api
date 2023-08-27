@@ -9,6 +9,8 @@ using MediatR;
 using AlohaMaui.Core.Filters;
 using AlohaMaui.Core.Queries;
 using AlohaMaui.Core.Commands;
+using System.Reflection;
+using Microsoft.Extensions.Logging;
 
 namespace AlohaMaui.Api.Controllers;
 
@@ -84,13 +86,15 @@ public class EventsController : BaseApiController
             var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Photo));
             newEvent.Assets = assets;
         }
-        catch
+        catch(Exception ex)
         {
+            _logger.LogError(ex, $"CreateEvent:CreateAssets:Fail(UserId={UserId}; EventId={newEvent.Id}");
             // no op
         }
 
         await _mediator.Send(new CreateCommunityEventCommand(UserId!.Value, newEvent));
-        
+        _logger.LogInformation($"CreateEvent:Success(UserId={UserId}; EventId={newEvent.Id})");
+
         return Ok(newEvent);
     }
 }

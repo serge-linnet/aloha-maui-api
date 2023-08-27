@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
         if (user == null || _hasher.HashPassword(model.Email, model.Password) != user.PasswordHash)
         {
             _logger.LogInformation($"SignIn:Fail-NotExists", model.Email);
-            return BadRequest("User with this email and password does not exist.");
+            return Unauthorized("User with this email and password does not exist.");
         }
 
         var token = _jwtTokenGenerator.Generate(user);
@@ -72,7 +72,7 @@ public class AuthController : ControllerBase
         if (user != null)
         {
             _logger.LogInformation($"SignUp:Fail-AlreadyExists", model.Email);
-            return BadRequest("User with this email and password already exist.");
+            return Conflict("User with this email and password already exist.");
         }
 
         user = new User()
