@@ -83,7 +83,7 @@ public class EventsController : BaseApiController
         
         try
         {
-            var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Photo));
+            var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Id, request.Photo));
             newEvent.Assets = assets;
         }
         catch(Exception ex)

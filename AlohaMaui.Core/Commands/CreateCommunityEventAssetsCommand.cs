@@ -5,8 +5,13 @@ namespace AlohaMaui.Core.Commands
 {
     public class CreateCommunityEventAssetsCommand : IRequest<EventAssets>
     {
+        public Guid EventId { get; }
         public string ImageBase64 { get; }
 
-        public CreateCommunityEventAssetsCommand(string imageBase64) => ImageBase64 = imageBase64;
+        public CreateCommunityEventAssetsCommand(Guid eventId, string imageBase64)
+        {
+            EventId = eventId;
+            ImageBase64 = imageBase64;
+        }
     }
 }
