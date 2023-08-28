@@ -48,7 +48,7 @@ namespace AlohaMaui.Api
                     new Claim("Id", Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim("Role", user.Role),
+                    new Claim(ClaimTypes.Role, user.Role),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                 }),
                 Expires = DateTime.UtcNow.AddMinutes(5),

@@ -52,23 +52,6 @@ internal class Program
                 ValidateLifetime = false,
                 ValidateIssuerSigningKey = true
             };
-            //x.RequireHttpsMetadata = false;
-            //x.SaveToken = true;
-            //x.TokenValidationParameters = new TokenValidationParameters
-            //{
-            //    ValidateIssuerSigningKey = true,
-            //    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            //    ValidateIssuer = false,
-            //    ValidateAudience = false
-            //};
-            //x.Events = new JwtBearerEvents
-            //{
-            //    OnMessageReceived = context =>
-            //    {
-            //        context.Token = context.Request.Cookies["X-Access-Token"];
-            //        return Task.CompletedTask;
-            //    }
-            //};
         });
 
         services.AddAuthorization(options =>
