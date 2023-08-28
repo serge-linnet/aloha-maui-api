@@ -28,8 +28,9 @@ internal class Program
 
     private static void ConfigureAuth(IServiceCollection services, ConfigurationManager configuration)
     {
-        var jwtSecret = configuration["Auth:JwtSecret"];
-        Guard.Against.NullOrEmpty(jwtSecret, nameof(jwtSecret));
+        var jwtSecret = configuration["Auth:Jwt:Secret"];
+        var jwtIssuer = configuration["Auth:Jwt:Issuer"];
+        var jwtAudience = configuration["Auth:Jwt:Audience"];        
 
         services.AddAuthentication(x =>
         {
@@ -41,23 +42,33 @@ internal class Program
 
         }).AddJwtBearer(x =>
         {
-            x.RequireHttpsMetadata = false;
-            x.SaveToken = true;
             x.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtIssuer,
+                ValidAudience = jwtAudience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-                ValidateIssuer = false,
-                ValidateAudience = false
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true
             };
-            x.Events = new JwtBearerEvents
-            {
-                OnMessageReceived = context =>
-                {
-                    context.Token = context.Request.Cookies["X-Access-Token"];
-                    return Task.CompletedTask;
-                }
-            };
+            //x.RequireHttpsMetadata = false;
+            //x.SaveToken = true;
+            //x.TokenValidationParameters = new TokenValidationParameters
+            //{
+            //    ValidateIssuerSigningKey = true,
+            //    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            //    ValidateIssuer = false,
+            //    ValidateAudience = false
+            //};
+            //x.Events = new JwtBearerEvents
+            //{
+            //    OnMessageReceived = context =>
+            //    {
+            //        context.Token = context.Request.Cookies["X-Access-Token"];
+            //        return Task.CompletedTask;
+            //    }
+            //};
         });
 
         services.AddAuthorization(options =>
@@ -133,9 +144,10 @@ internal class Program
             new CosmosContainerProvider("users", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
         );
 
-        var jwtSecret = configuration["Auth:JwtSecret"];
-        Guard.Against.NullOrEmpty(jwtSecret, nameof(jwtSecret));
-        services.AddSingleton<IJwtTokenGenerator>(new JwtTokenGenerator(jwtSecret));
+        var jwtSecret = configuration["Auth:Jwt:Secret"];
+        var jwtIssuer = configuration["Auth:Jwt:Issuer"];
+        var jwtAudience = configuration["Auth:Jwt:Audience"];
+        services.AddSingleton<IJwtTokenGenerator>(new JwtTokenGenerator(jwtSecret, jwtIssuer, jwtAudience));
 
         services.AddSingleton<IPasswordHasher>(new PasswordHasher(configuration["Auth:PasswordSalt"]));
 

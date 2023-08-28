@@ -39,7 +39,7 @@ namespace AlohaMaui.Core.Repositories
         public async Task<User?> FindByRefreshToken(string refreshToken)
         {
             var container = _containerProvider.GetContainer();
-            var query = new QueryDefinition("SELECT TOP 1 * from users u WHERE u.token = @token")
+            var query = new QueryDefinition("SELECT TOP 1 * from users u WHERE u.Token = @token")
                     .WithParameter("@token", refreshToken);
 
             using var iterator = container.GetItemQueryIterator<User>(query);

@@ -1,4 +1,5 @@
-﻿using AlohaMaui.Core.Entities;
+﻿using AlohaMaui.Api.Models;
+using AlohaMaui.Core.Entities;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -20,33 +21,73 @@ namespace AlohaMaui.Api
 
     public interface IJwtTokenGenerator
     {
-        JwtToken Generate(User user);
+        string GenerateAccessToken(User user);
+        RefreshToken GenerateRefreshToken(User user);
     }
 
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly string _secret;
+        private readonly string _issuer;
+        private readonly string _audience;
 
-        public JwtTokenGenerator(string secret)
+        public JwtTokenGenerator(string secret, string issuer, string audience)
         {
             _secret = secret;
+            _issuer = issuer;
+            _audience = audience;
         }
 
-        public JwtToken Generate(User user)
+        public string GenerateAccessToken(User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_secret);
-
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()), new Claim(ClaimTypes.Email, user.Email), new Claim(ClaimTypes.Role, user.Role) }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature)
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim("Id", Guid.NewGuid().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim("Role", user.Role),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(5),
+                Issuer = _issuer,
+                Audience = _audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha512Signature)
             };
+            var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            var encrypterToken = tokenHandler.WriteToken(token);
 
-            return new JwtToken(user.Email, encrypterToken);
+            return tokenHandler.WriteToken(token);
+        }
+
+        public RefreshToken GenerateRefreshToken(User user)
+        {
+            var key = Encoding.ASCII.GetBytes(_secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim("Id", Guid.NewGuid().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddDays(7),
+                Issuer = _issuer,
+                Audience = _audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
+                               SecurityAlgorithms.HmacSha512Signature)
+            };
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+
+            return new RefreshToken
+            {
+                Token = tokenHandler.WriteToken(token),
+                Expires = token.ValidTo
+            };
         }
     }
 }

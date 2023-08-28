@@ -1,9 +1,10 @@
 
 using AlohaMaui.Api.Models;
+using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 using User = AlohaMaui.Core.Entities.User;
 
 namespace AlohaMaui.Api.Controllers;
@@ -45,22 +46,16 @@ public class AuthController : ControllerBase
             _logger.LogInformation($"SignIn:Fail-NotExists", model.Email);
             return Unauthorized("User with this email and password does not exist.");
         }
-
-        var token = _jwtTokenGenerator.Generate(user);
-        SetJwt(token.Token);
-
-        var refreshToken = GenerateRefreshToken();
-        SetRefreshToken(refreshToken);
-
+                
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user);
+        var refreshToken = _jwtTokenGenerator.GenerateRefreshToken(user);
         user.Token = refreshToken.Token;
-        user.TokenCreated = refreshToken.Created;
         user.TokenExpires = refreshToken.Expires;
-
         await _userRepository.UpdateUser(user);
 
         _logger.LogInformation($"SignIn:Success", model.Email);
 
-        return Ok(new UserInfo(user));
+        return Ok(new { AccessToken = accessToken, RefreshToken = refreshToken.Token });
     }
 
     [HttpPost("SignUp")]
@@ -75,31 +70,55 @@ public class AuthController : ControllerBase
             return Conflict("User with this email and password already exist.");
         }
 
-        user = new User()
+        user = new User(model.Email, Role.User)
         {
-            Email = model.Email,
             PasswordHash = _hasher.HashPassword(model.Email, model.Password),
             Created = DateTime.Now,
             Updated = DateTime.Now,
             Id = Guid.NewGuid(),
-            Role = "User"
         };
 
-        var token = _jwtTokenGenerator.Generate(user);
-        SetJwt(token.Token);
-
-        var refreshToken = GenerateRefreshToken();
-        SetRefreshToken(refreshToken);
-
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user);
+        var refreshToken = _jwtTokenGenerator.GenerateRefreshToken(user);
         user.Token = refreshToken.Token;
-        user.TokenCreated = refreshToken.Created;
         user.TokenExpires = refreshToken.Expires;
 
         await _userRepository.CreateUser(user);
 
         _logger.LogInformation($"SignUp.Success", model.Email);
 
-        return Ok(new UserInfo(user));
+        return Ok(new { AccessToken = accessToken, RefreshToken = refreshToken.Token });
+    }
+
+    [HttpPost("Refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest refresh)
+    {
+        var token = refresh.Token;
+        _logger.LogInformation($"Refresh", token);
+        var user = await _userRepository.FindByRefreshToken(token);
+
+        if (user == null)
+        {
+            _logger.LogInformation($"Refresh:Fail-NotExist", token);
+            return Unauthorized("User with this refresh token does not exist.");
+        }
+
+        if (user.TokenExpires <= DateTime.UtcNow)
+        {
+            _logger.LogInformation($"Refresh:Fail-Expired", token);
+            return Unauthorized("Refresh token has expired.");
+        }
+
+        var accessToken = _jwtTokenGenerator.GenerateAccessToken(user);
+        var refreshToken = _jwtTokenGenerator.GenerateRefreshToken(user);
+        user.Token = refreshToken.Token;
+        user.TokenExpires = refreshToken.Expires;
+
+        await _userRepository.UpdateUser(user);
+
+        _logger.LogInformation($"Refresh.Success", user.Email);
+
+        return Ok(new { AccessToken = accessToken, RefreshToken = refreshToken.Token });
     }
 
     [HttpPost]
@@ -110,63 +129,5 @@ public class AuthController : ControllerBase
         HttpContext.Response.Cookies.Delete("X-Refresh-Token");
 
         return Ok();
-    }
-
-    //[HttpGet("RefreshToken")]
-    //public async Task<ActionResult<string>> RefreshToken()
-    //{
-    //    var refreshToken = Request.Cookies["X-Refresh-Token"];
-    //    if (string.IsNullOrWhiteSpace(refreshToken))
-    //    {
-    //        return Unauthorized("No refresh token.");
-    //    }
-
-    //    var user = await _userRepository.FindByRefreshToken(refreshToken);
-    //    if (user == null || user.TokenExpires < DateTime.Now)
-    //    {
-    //        return Unauthorized("Token has expired.");
-    //    }
-
-    //    await DoAllTheTokenThings(user);
-
-    //    return Ok();
-    //}
-
-    private void SetJwt(string encrypterToken)
-    {
-        HttpContext.Response.Cookies.Append("X-Access-Token", encrypterToken,
-              new CookieOptions
-              {
-                  Expires = DateTime.Now.AddDays(7), // todo: change to 15 minutes and refresh
-                  HttpOnly = true,
-                  Secure = true,
-                  IsEssential = true,
-                  SameSite = SameSiteMode.Lax
-              });
-    }
-
-    private RefreshToken GenerateRefreshToken()
-    {
-        var refreshToken = new RefreshToken()
-        {
-            Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-            Expires = DateTime.Now.AddDays(7),
-            Created = DateTime.Now
-        };
-
-        return refreshToken;
-    }
-
-    private void SetRefreshToken(RefreshToken refreshToken)
-    {
-        HttpContext.Response.Cookies.Append("X-Refresh-Token", refreshToken.Token,
-             new CookieOptions
-             {
-                 Expires = refreshToken.Expires,
-                 HttpOnly = true,
-                 Secure = true,
-                 IsEssential = true,
-                 SameSite = SameSiteMode.None
-             });
     }
 }
