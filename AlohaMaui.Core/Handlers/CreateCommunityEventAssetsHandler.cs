@@ -1,10 +1,11 @@
 ﻿using AlohaMaui.Core.Commands;
 using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Providers;
-using AlohaMaui.Core.Repositories;
 using Azure.Storage.Blobs;
 using MediatR;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace AlohaMaui.Core.Handlers
 {
@@ -44,7 +45,7 @@ namespace AlohaMaui.Core.Handlers
             using (var stream = new MemoryStream(imageBytes))
             {
                 using (var image = Image.Load(stream))
-                {
+                {                    
                     var cover = image.Clone(x => x.Resize(new ResizeOptions
                     {
                         Size = new Size(Math.Min(1600, image.Width), Math.Min(image.Height, 800)),
@@ -72,10 +73,23 @@ namespace AlohaMaui.Core.Handlers
         {
             using (var resizedStream = new MemoryStream())
             {
-                image.Save(resizedStream, new JpegEncoder() { Quality = quality });
+                ImageEncoder encoder;
+                string extention = "jpg";
+
+                if (image.Metadata.DecodedImageFormat is PngFormat)
+                {
+                    encoder = new PngEncoder();
+                    extention = "png";
+                }
+                else
+                {
+                    encoder = new JpegEncoder() { Quality = quality };
+                }
+
+                image.Save(resizedStream, encoder);
                 resizedStream.Position = 0;
 
-                var blobName = $"{Guid.NewGuid()}.jpg";
+                var blobName = $"{Guid.NewGuid()}.${extention}";
                 await container.UploadBlobAsync(blobName, resizedStream);
 
                 return blobName;
