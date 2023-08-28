@@ -12,6 +12,7 @@ namespace AlohaMaui.Core.Handlers
         public GetPublicCommunityEventsHandler(ICommunityEventRepository repository) {
             _repository = repository;
         }
+
         public Task<IEnumerable<CommunityEvent>> Handle(GetPublicCommunityEventsQuery request, CancellationToken cancellationToken)
         {
             return _repository.FindPublicEvents(request.Filter);

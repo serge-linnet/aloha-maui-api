@@ -56,11 +56,12 @@ public class EventsController : BaseApiController
         return result;
     }
 
-    [Authorize(Policy = "AdminOnly")]
-    [HttpGet("pending")]
-    public IEnumerable<CommunityEvent> FindPending()
+    //[Authorize(Policy = "AdminOnly")]
+    [HttpGet("manage")]
+    public async Task<IEnumerable<CommunityEvent>> FindForAdmin([FromQuery] ManageCommunityEventsFilter filter)
     {
-        return _eventRepository.FindPendingEvents();
+        var result = await _mediator.Send(new GetCommunityEventsForAdminQuery(filter));
+        return result;
     }
 
     [Authorize]
@@ -83,7 +84,7 @@ public class EventsController : BaseApiController
         
         try
         {
-            var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Id, request.Photo));
+            var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Photo));
             newEvent.Assets = assets;
         }
         catch(Exception ex)

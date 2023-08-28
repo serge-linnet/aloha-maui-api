@@ -21,7 +21,7 @@ namespace AlohaMaui.Core.Handlers
             var container = blobClient.GetBlobContainerClient("event-assets");
             var containerUrl = container.Uri.ToString();
 
-            var images = await ConvertAndUpload(container, request.ImageBase64, request.EventId);
+            var images = await ConvertAndUpload(container, request.ImageBase64);
 
             var assets = new EventAssets
             {
@@ -31,7 +31,7 @@ namespace AlohaMaui.Core.Handlers
             return assets;
         }
 
-        private async Task<EventImages> ConvertAndUpload(BlobContainerClient container, string dataUrl, Guid eventId)
+        private async Task<EventImages> ConvertAndUpload(BlobContainerClient container, string dataUrl)
         {
             var parts = dataUrl.Split(',');
             if (parts.Length != 2)
@@ -51,14 +51,14 @@ namespace AlohaMaui.Core.Handlers
                         Size = new Size(Math.Min(1600, image.Width), Math.Min(image.Height, 800)),
                         Mode = ResizeMode.Max
                     }));
-                    var coverPhoto = await UploadToBlobStorage(container, cover, eventId);
+                    var coverPhoto = await UploadToBlobStorage(container, cover);
 
                     image.Mutate(x => x.Resize(new ResizeOptions
                     {
                         Size = new Size(Math.Min(600, image.Width), Math.Min(image.Height, 300)),
                         Mode = ResizeMode.Max
                     }));
-                    var thumbnail = await UploadToBlobStorage(container, image, eventId, "-thmb", 70);
+                    var thumbnail = await UploadToBlobStorage(container, image, 70);
 
                     return new EventImages
                     {
@@ -71,9 +71,7 @@ namespace AlohaMaui.Core.Handlers
 
         private async Task<string> UploadToBlobStorage(
             BlobContainerClient container, 
-            Image image, 
-            Guid eventId,
-            string suffix = "",
+            Image image,
             int quality = 80)
         {
             using (var resizedStream = new MemoryStream())
@@ -94,7 +92,8 @@ namespace AlohaMaui.Core.Handlers
                 image.Save(resizedStream, encoder);
                 resizedStream.Position = 0;
 
-                var blobName = $"{eventId}{suffix}.${extention}";
+                var id = Guid.NewGuid().ToString();
+                var blobName = $"{id}.{extention}";
                 await container.UploadBlobAsync(blobName, resizedStream);
 
                 return blobName;

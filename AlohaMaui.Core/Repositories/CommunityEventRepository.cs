@@ -16,6 +16,7 @@ namespace AlohaMaui.Core.Repositories
         Task<CommunityEvent> CreateEvent(CommunityEvent entity);
         Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId);
         Task<CommunityEvent> Update(CommunityEvent entity);
+        Task<IEnumerable<CommunityEvent>> FindEventsForAdmin(ManageCommunityEventsFilter filter);
     }
 
     public class CommunityEventRepository : ICommunityEventRepository
@@ -34,7 +35,7 @@ namespace AlohaMaui.Core.Repositories
             return result;
         }
 
-        
+
 
         public async Task<IEnumerable<CommunityEvent>> FindPublicEvents(PublicCommunityEventsFilter filter)
         {
@@ -43,11 +44,12 @@ namespace AlohaMaui.Core.Repositories
                 "SELECT * from events e " +
                 "WHERE " +
                 "   e.type = @type" +
-                "   AND e.Status = @status"  +
+                "   AND e.Status = @status" +
                 "   AND (IS_NULL(@from) OR e.StartsAt >= @from)" +
                 "   AND (IS_NULL(@to) OR e.EndsAt <= @to)" +
-                "   AND (IS_NULL(@familyFriendly) OR e.FamilyFriendly = @familyFriendly)"  +
-                "   AND (IS_NULL(@country) OR e.Place.CountryCode = @country)"
+                "   AND (IS_NULL(@familyFriendly) OR e.FamilyFriendly = @familyFriendly)" +
+                "   AND (IS_NULL(@country) OR e.Place.CountryCode = @country) " +
+                "ORDER BY e.StartsAt"
                 )
                 .WithParameter("@type", EventType.Community)
                 .WithParameter("@status", CommunityEventStatus.Approved)
@@ -56,13 +58,9 @@ namespace AlohaMaui.Core.Repositories
                 .WithParameter("@familyFriendly", filter.FamilyFriendly)
                 .WithParameter("@country", filter.Country);
 
-
-
             var results = new List<CommunityEvent>();
 
-            //queryable.ToQueryDefinition().QueryTex
             using var iterator = container.GetItemQueryIterator<CommunityEvent>(query);
-            
             while (iterator.HasMoreResults)
             {
                 foreach (var item in await iterator.ReadNextAsync())
@@ -73,7 +71,7 @@ namespace AlohaMaui.Core.Repositories
             return results;
         }
 
-        [Obsolete] 
+        [Obsolete]
         public IEnumerable<CommunityEvent> FindEvents(string query)
         {
             var container = _containerProvider.GetContainer();
@@ -101,7 +99,7 @@ namespace AlohaMaui.Core.Repositories
         public async Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId)
         {
             var container = _containerProvider.GetContainer();
-            var query = new QueryDefinition("SELECT * from events e WHERE e.UserId = @id")
+            var query = new QueryDefinition("SELECT * from events e WHERE e.UserId = @id ORDER BY e.StartsAt")
                     .WithParameter("@id", userId);
 
             var results = new List<CommunityEvent>();
@@ -121,6 +119,36 @@ namespace AlohaMaui.Core.Repositories
             var container = _containerProvider.GetContainer();
             var newEntity = await container.UpsertItemAsync(entity, new PartitionKey(entity.Id.ToString()));
             return newEntity;
+        }
+
+        public async Task<IEnumerable<CommunityEvent>> FindEventsForAdmin(ManageCommunityEventsFilter filter)
+        {
+            var container = _containerProvider.GetContainer();
+            var query = new QueryDefinition("" +
+                "SELECT * from events e " +
+                "WHERE " +
+                "   e.type = @type" +
+                "   AND e.Status = @pending" +
+                (filter.IncludeApproved ? " OR e.Status = @approved" : "") +
+                (filter.IncludeRejected ? " OR e.Status = @rejected" : "") +
+                "   ORDER BY e.StartsAt"
+                )
+                .WithParameter("@type", EventType.Community)
+                .WithParameter("@approved", CommunityEventStatus.Approved)
+                .WithParameter("@pending", CommunityEventStatus.Pending)
+                .WithParameter("@rejected", CommunityEventStatus.Rejected);
+
+            var results = new List<CommunityEvent>();
+
+            using var iterator = container.GetItemQueryIterator<CommunityEvent>(query);
+            while (iterator.HasMoreResults)
+            {
+                foreach (var item in await iterator.ReadNextAsync())
+                {
+                    results.Add(item);
+                }
+            }
+            return results;
         }
     }
 }
