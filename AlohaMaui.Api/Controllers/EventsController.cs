@@ -11,6 +11,7 @@ using AlohaMaui.Core.Queries;
 using AlohaMaui.Core.Commands;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using AutoMapper;
 
 namespace AlohaMaui.Api.Controllers;
 
@@ -21,15 +22,18 @@ public class EventsController : BaseApiController
     private readonly ILogger<EventsController> _logger;
     private readonly ICommunityEventRepository _eventRepository;
     private readonly ISender _mediator;
+    private readonly IMapper _mapper;
 
     public EventsController(
         ILogger<EventsController> logger, 
         ICommunityEventRepository eventRepository,
-        ISender mediator)
+        ISender mediator,
+        IMapper mapper)
     {
         _logger = logger;
         _eventRepository = eventRepository;    
         _mediator = mediator;
+        _mapper = mapper;
     }
 
     [HttpGet]
@@ -56,7 +60,7 @@ public class EventsController : BaseApiController
         return result;
     }
 
-    //[Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "AdminOnly")]
     [HttpGet("manage")]
     public async Task<IEnumerable<CommunityEvent>> FindForAdmin([FromQuery] ManageCommunityEventsFilter filter)
     {
@@ -97,6 +101,50 @@ public class EventsController : BaseApiController
         _logger.LogInformation($"CreateEvent:Success(UserId={UserId}; EventId={newEvent.Id})");
 
         return Ok(newEvent);
+    }
+
+    [HttpPut]
+    [Authorize]
+    public async Task<IActionResult> Update([FromBody] UpdateCommunityEventRequest request)
+    {
+        var oldEvent = await _mediator.Send(new GetCommunityEventByIdQuery(request.Id));
+        if (oldEvent == null)
+        {
+            return NotFound();
+        }
+
+        if (UserRole == Role.User && oldEvent.UserId != UserId)
+        {
+            return Unauthorized();
+        }
+
+        var evnt = _mapper.Map<CommunityEvent>(request);
+        evnt.UserId = oldEvent.UserId;
+
+        if (!string.IsNullOrEmpty(request.Photo))
+        {
+            try
+            {
+                var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Photo));
+                evnt.Assets = assets;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"UpdateEvent:CreateAssets:Fail(UserId={UserId}; EventId={evnt.Id}");
+                // no op
+            }
+        } 
+        else
+        {
+            evnt.Assets = oldEvent.Assets;
+        }
+
+        await _mediator.Send(new UpdateCommunityEventCommand(evnt));
+        _logger.LogInformation($"UpdateEvent:Success(UserId={UserId}; EventId={evnt.Id})");
+
+        return Ok(evnt);
+
+        throw new NotImplementedException();
     }
 }
 

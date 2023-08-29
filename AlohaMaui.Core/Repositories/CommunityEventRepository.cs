@@ -14,6 +14,7 @@ namespace AlohaMaui.Core.Repositories
         IEnumerable<CommunityEvent> FindEvents(string query);
         IEnumerable<CommunityEvent> FindPendingEvents();
         Task<CommunityEvent> CreateEvent(CommunityEvent entity);
+        Task<CommunityEvent> UpdateEvent(CommunityEvent entity);
         Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId);
         Task<CommunityEvent> Update(CommunityEvent entity);
         Task<IEnumerable<CommunityEvent>> FindEventsForAdmin(ManageCommunityEventsFilter filter);
@@ -34,8 +35,6 @@ namespace AlohaMaui.Core.Repositories
             var result = await container.ReadItemAsync<CommunityEvent>(id.ToString(), new PartitionKey(id.ToString()));
             return result;
         }
-
-
 
         public async Task<IEnumerable<CommunityEvent>> FindPublicEvents(PublicCommunityEventsFilter filter)
         {
@@ -93,6 +92,13 @@ namespace AlohaMaui.Core.Repositories
         {
             var container = _containerProvider.GetContainer();
             var newEntity = await container.CreateItemAsync(entity, new PartitionKey(entity.Id.ToString()));
+            return newEntity;
+        }
+
+        public async Task<CommunityEvent> UpdateEvent(CommunityEvent entity)
+        {
+            var container = _containerProvider.GetContainer();
+            var newEntity = await container.UpsertItemAsync(entity, new PartitionKey(entity.Id.ToString()));
             return newEntity;
         }
 

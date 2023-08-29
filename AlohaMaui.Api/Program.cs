@@ -84,6 +84,8 @@ internal class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        services.AddAutoMapper(typeof(MapperProfile).Assembly);
+
         AddDataServices(services, configuration);
     }
 

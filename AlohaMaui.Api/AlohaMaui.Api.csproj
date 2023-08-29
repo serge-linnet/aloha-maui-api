@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Ardalis.GuardClauses" Version="4.1.1" />
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.17.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.61.0" />
     <PackageReference Include="MediatR" Version="12.1.1" />
