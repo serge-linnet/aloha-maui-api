@@ -1,11 +1,7 @@
 ﻿using AlohaMaui.Core.Entities;
 using AlohaMaui.Core.Filters;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace AlohaMaui.Core.Queries
 {
@@ -14,5 +10,10 @@ namespace AlohaMaui.Core.Queries
         public PublicCommunityEventsFilter Filter { get; }
 
         public GetPublicCommunityEventsQuery(PublicCommunityEventsFilter filter) => Filter = filter;
+
+        public string GetCacheKey()
+        {
+            return $"{GetType().Name}_{JsonConvert.SerializeObject(Filter)}";
+        }
     }
 }

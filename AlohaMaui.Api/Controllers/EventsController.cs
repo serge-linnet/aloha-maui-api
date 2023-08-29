@@ -12,6 +12,7 @@ using AlohaMaui.Core.Commands;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
+using LazyCache;
 
 namespace AlohaMaui.Api.Controllers;
 
@@ -23,25 +24,30 @@ public class EventsController : BaseApiController
     private readonly ICommunityEventRepository _eventRepository;
     private readonly ISender _mediator;
     private readonly IMapper _mapper;
+    private readonly IAppCache _cache;
 
     public EventsController(
         ILogger<EventsController> logger, 
         ICommunityEventRepository eventRepository,
         ISender mediator,
-        IMapper mapper)
+        IMapper mapper,
+        IAppCache cache)
     {
         _logger = logger;
         _eventRepository = eventRepository;    
         _mediator = mediator;
         _mapper = mapper;
+        _cache = cache;
     }
 
     [HttpGet]
-    public async Task<IEnumerable<CommunityEvent>> Find(PublicCommunityEventsFilter? query)
+    public async Task<IEnumerable<CommunityEvent>> Find(PublicCommunityEventsFilter? request)
     {
-        query = new PublicCommunityEventsFilter(); // todo: read from request
+        var filter = new PublicCommunityEventsFilter(); // todo: read from request
 
-        var result = await _mediator.Send(new GetPublicCommunityEventsQuery(query));
+        var query = new GetPublicCommunityEventsQuery(filter);
+        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query));
+
         return result;
     }
 
@@ -57,6 +63,7 @@ public class EventsController : BaseApiController
     public async Task<CommunityEvent> ChangeStatus([FromRoute] Guid id, [FromBody] EventChangeStatusRequest request)
     {
         var result = await _mediator.Send(new ChangeCommunityEventStatusCommand(id, request.Status));
+        _cache.Remove(new GetPublicCommunityEventsQuery(new PublicCommunityEventsFilter()).GetCacheKey());
         return result;
     }
 
@@ -76,7 +83,10 @@ public class EventsController : BaseApiController
         {
             return Unauthorized();
         }
-        var result = await _mediator.Send(new GetAllUserCommunityEventsQuery(UserId.Value));
+
+        var query = new GetAllUserCommunityEventsQuery(UserId.Value);
+        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query));
+
         return Ok(result);
     }
 
@@ -99,6 +109,9 @@ public class EventsController : BaseApiController
 
         await _mediator.Send(new CreateCommunityEventCommand(UserId!.Value, newEvent));
         _logger.LogInformation($"CreateEvent:Success(UserId={UserId}; EventId={newEvent.Id})");
+
+        _cache.Remove(new GetAllUserCommunityEventsQuery(UserId.Value).GetCacheKey());
+        _cache.Remove(new GetPublicCommunityEventsQuery(new PublicCommunityEventsFilter()).GetCacheKey());
 
         return Ok(newEvent);
     }
@@ -142,9 +155,9 @@ public class EventsController : BaseApiController
         await _mediator.Send(new UpdateCommunityEventCommand(evnt));
         _logger.LogInformation($"UpdateEvent:Success(UserId={UserId}; EventId={evnt.Id})");
 
-        return Ok(evnt);
+        _cache.Remove(new GetPublicCommunityEventsQuery(new PublicCommunityEventsFilter()).GetCacheKey());
 
-        throw new NotImplementedException();
+        return Ok(evnt);
     }
 }
 

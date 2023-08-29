@@ -8,5 +8,8 @@ namespace AlohaMaui.Core.Queries
         public Guid UserId { get; }
 
         public GetAllUserCommunityEventsQuery(Guid userId) => UserId = userId;
+
+        public string GetCacheKey() =>
+            $"{nameof(GetAllUserCommunityEventsQuery)}-{UserId}";
     }
 }
