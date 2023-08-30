@@ -2,7 +2,7 @@
 
 namespace AlohaMaui.Core.Entities
 {
-    public class PledgeEvent : EventBase
+    public class OrganizationEvent : EventBase
     {
         [JsonProperty]
         public string? Country { get; set; }
@@ -11,17 +11,17 @@ namespace AlohaMaui.Core.Entities
         public string? City { get; set; }
 
         [JsonProperty]
-        public string? Name { get; set; }
+        public string? GroupName { get; set; }
 
         [JsonProperty]
-        public string? Activity { get; set; }
+        public string? OrgType { get; set; }
 
         [JsonProperty]
         public int? NumberOfPeople { get; set; }
 
-        public PledgeEvent()
+        public OrganizationEvent()
         {
-            Type = EventType.Pledge;
+            Type = EventType.OrgEvent;
             Status = EventStatus.Approved;
         }
     }

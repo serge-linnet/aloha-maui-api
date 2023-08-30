@@ -3,9 +3,9 @@ using MediatR;
 
 namespace AlohaMaui.Core.Queries
 {
-    public class GetAllPledgeEventsQuery : IRequest<IEnumerable<PledgeEvent>>
+    public class GetAllOrgEventsQuery : IRequest<IEnumerable<OrganizationEvent>>
     {
         public string GetCacheKey() =>
-            $"{nameof(GetAllPledgeEventsQuery)}";
+            $"{nameof(GetAllOrgEventsQuery)}";
     }
 }

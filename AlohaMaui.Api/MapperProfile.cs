@@ -10,6 +10,7 @@ namespace AlohaMaui.Api
         {
             CreateMap<UpdateCommunityEventRequest, CommunityEvent>();
             CreateMap<PledgeEventModel, PledgeEvent>();
+            CreateMap<OrganizationEventModel, OrganizationEvent>();
         }
     }
 }

@@ -134,6 +134,10 @@ internal class Program
             new CosmosContainerProvider("events", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
         );
 
+        services.AddSingleton<IOrgEventRepository>(new OrgEventRepository(
+            new CosmosContainerProvider("events", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
+        );
+
         var jwtSecret = configuration["Auth:Jwt:Secret"];
         var jwtIssuer = configuration["Auth:Jwt:Issuer"];
         var jwtAudience = configuration["Auth:Jwt:Audience"];
