@@ -5,9 +5,6 @@ namespace AlohaMaui.Core.Entities
 
     public class CommunityEvent : EventBase
     {
-        [JsonProperty(PropertyName = "id")]
-        public Guid Id { get; set; } = Guid.NewGuid();
-
         [JsonProperty]
         public string Title { get; set; }
 
@@ -31,9 +28,6 @@ namespace AlohaMaui.Core.Entities
 
         [JsonProperty]
         public Place? Place { get; set; }
-
-        [JsonProperty]
-        public CommunityEventStatus Status { get; set; }
 
         [JsonProperty]
         public bool? IsOffline { get; set; }

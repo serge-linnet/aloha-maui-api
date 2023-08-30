@@ -4,6 +4,6 @@ namespace AlohaMaui.Api.Models
 {
     public class EventChangeStatusRequest
     {
-        public CommunityEventStatus Status { get; set; }
+        public EventStatus Status { get; set; }
     }
 }

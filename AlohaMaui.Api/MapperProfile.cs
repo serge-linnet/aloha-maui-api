@@ -9,6 +9,7 @@ namespace AlohaMaui.Api
         public MapperProfile()
         {
             CreateMap<UpdateCommunityEventRequest, CommunityEvent>();
+            CreateMap<PledgeEventModel, PledgeEvent>();
         }
     }
 }

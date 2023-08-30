@@ -3,7 +3,7 @@
     public enum EventType
     {
         Community = 0,
-        Individual = 1,
+        Pledge = 1,
         OrgEvent = 2
     }
 }

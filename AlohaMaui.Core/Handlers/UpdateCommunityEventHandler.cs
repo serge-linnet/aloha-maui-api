@@ -14,7 +14,7 @@ namespace AlohaMaui.Core.Handlers
         public async Task<CommunityEvent> Handle(UpdateCommunityEventCommand request, CancellationToken cancellationToken)
         {
             var newEvent = request.Event;
-            
+
             var result = await _repository.UpdateEvent(newEvent);
             return result;
         }

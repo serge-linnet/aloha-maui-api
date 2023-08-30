@@ -9,7 +9,8 @@ namespace AlohaMaui.Core.Handlers
     {
         private readonly ICommunityEventRepository _repository;
 
-        public GetPublicCommunityEventsHandler(ICommunityEventRepository repository) {
+        public GetPublicCommunityEventsHandler(ICommunityEventRepository repository)
+        {
             _repository = repository;
         }
 

@@ -11,8 +11,6 @@ namespace AlohaMaui.Core.Repositories
     {
         Task<CommunityEvent> Find(Guid id);
         Task<IEnumerable<CommunityEvent>> FindPublicEvents(PublicCommunityEventsFilter filter);
-        IEnumerable<CommunityEvent> FindEvents(string query);
-        IEnumerable<CommunityEvent> FindPendingEvents();
         Task<CommunityEvent> CreateEvent(CommunityEvent entity);
         Task<CommunityEvent> UpdateEvent(CommunityEvent entity);
         Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId);
@@ -51,7 +49,7 @@ namespace AlohaMaui.Core.Repositories
                 "ORDER BY e.StartsAt"
                 )
                 .WithParameter("@type", EventType.Community)
-                .WithParameter("@status", CommunityEventStatus.Approved)
+                .WithParameter("@status", EventStatus.Approved)
                 .WithParameter("@from", filter.From)
                 .WithParameter("@to", filter.To?.Date)
                 .WithParameter("@familyFriendly", filter.FamilyFriendly)
@@ -68,24 +66,6 @@ namespace AlohaMaui.Core.Repositories
                 }
             }
             return results;
-        }
-
-        [Obsolete]
-        public IEnumerable<CommunityEvent> FindEvents(string query)
-        {
-            var container = _containerProvider.GetContainer();
-            var events = container.GetItemLinqQueryable<CommunityEvent>(allowSynchronousQueryExecution: true).ToList()
-                .Where(x => x.Status == CommunityEventStatus.Approved);
-            return events;
-        }
-
-        [Obsolete]
-        public IEnumerable<CommunityEvent> FindPendingEvents()
-        {
-            var container = _containerProvider.GetContainer();
-            var events = container.GetItemLinqQueryable<CommunityEvent>(allowSynchronousQueryExecution: true).ToList()
-                .Where(x => x.Status == CommunityEventStatus.Pending);
-            return events;
         }
 
         public async Task<CommunityEvent> CreateEvent(CommunityEvent entity)
@@ -140,9 +120,9 @@ namespace AlohaMaui.Core.Repositories
                 "   ORDER BY e.StartsAt"
                 )
                 .WithParameter("@type", EventType.Community)
-                .WithParameter("@approved", CommunityEventStatus.Approved)
-                .WithParameter("@pending", CommunityEventStatus.Pending)
-                .WithParameter("@rejected", CommunityEventStatus.Rejected);
+                .WithParameter("@approved", EventStatus.Approved)
+                .WithParameter("@pending", EventStatus.Pending)
+                .WithParameter("@rejected", EventStatus.Rejected);
 
             var results = new List<CommunityEvent>();
 

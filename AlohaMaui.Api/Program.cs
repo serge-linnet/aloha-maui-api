@@ -30,7 +30,7 @@ internal class Program
     {
         var jwtSecret = configuration["Auth:Jwt:Secret"];
         var jwtIssuer = configuration["Auth:Jwt:Issuer"];
-        var jwtAudience = configuration["Auth:Jwt:Audience"];        
+        var jwtAudience = configuration["Auth:Jwt:Audience"];
 
         services.AddAuthentication(x =>
         {
@@ -128,6 +128,10 @@ internal class Program
 
         services.AddSingleton<IUserRepository>(new UserRepository(
             new CosmosContainerProvider("users", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
+        );
+
+        services.AddSingleton<IPledgeEventRepository>(new PledgeEventRepository(
+            new CosmosContainerProvider("events", services.BuildServiceProvider().GetRequiredService<ICosmosDatabaseProvider>()))
         );
 
         var jwtSecret = configuration["Auth:Jwt:Secret"];

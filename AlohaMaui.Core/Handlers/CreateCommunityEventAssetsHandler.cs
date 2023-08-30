@@ -45,7 +45,7 @@ namespace AlohaMaui.Core.Handlers
             using (var stream = new MemoryStream(imageBytes))
             {
                 using (var image = Image.Load(stream))
-                {                    
+                {
                     var cover = image.Clone(x => x.Resize(new ResizeOptions
                     {
                         Size = new Size(Math.Min(1600, image.Width), Math.Min(image.Height, 800)),
@@ -70,7 +70,7 @@ namespace AlohaMaui.Core.Handlers
         }
 
         private async Task<string> UploadToBlobStorage(
-            BlobContainerClient container, 
+            BlobContainerClient container,
             Image image,
             int quality = 80)
         {
