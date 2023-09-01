@@ -63,8 +63,8 @@ namespace AlohaMaui.Core.Repositories
                 "    count(1) AS Pledges, " +
                 "    sum(e.NumberOfPeople) AS People " +
                 "FROM events e " +
-                "WHERE e.type = @type" +
-                 "   AND e.Status = @status" +
+                "WHERE e.type = @type " +
+                 "   AND e.Status = @status " +
                 "GROUP BY e.Country "
             )
                 .WithParameter("@type", EventType.OrgEvent)
