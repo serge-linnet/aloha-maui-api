@@ -15,23 +15,17 @@ public class AuthController : ControllerBase
 {
     private readonly ILogger<AuthController> _logger;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
-    private readonly IGoogleAuthValidator _googleAuthValidator;
     private readonly IUserRepository _userRepository;
-    private readonly IConfiguration _config;
     private readonly IPasswordHasher _hasher;
 
     public AuthController(ILogger<AuthController> logger,
         IJwtTokenGenerator jwtTokenGenerator,
-        IGoogleAuthValidator googleAuthValidator,
         IUserRepository userRepository,
-        IConfiguration config,
         IPasswordHasher hasher)
     {
         _logger = logger;
         _jwtTokenGenerator = jwtTokenGenerator;
-        _googleAuthValidator = googleAuthValidator;
         _userRepository = userRepository;
-        _config = config;
         _hasher = hasher;
     }
 

@@ -2,6 +2,7 @@
 using AlohaMaui.Core.Filters;
 using AlohaMaui.Core.Providers;
 using Microsoft.Azure.Cosmos;
+using System.Diagnostics.Metrics;
 using static AlohaMaui.Core.Repositories.CommunityEventRepository;
 
 namespace AlohaMaui.Core.Repositories
@@ -16,6 +17,7 @@ namespace AlohaMaui.Core.Repositories
         Task<IEnumerable<CommunityEvent>> FindEventsForUser(Guid userId);
         Task<CommunityEvent> Update(CommunityEvent entity);
         Task<IEnumerable<CommunityEvent>> FindEventsForAdmin(ManageCommunityEventsFilter filter);
+        Task<IEnumerable<string>> FindAllCountries();
     }
 
     public class CommunityEventRepository : ICommunityEventRepository
@@ -45,7 +47,8 @@ namespace AlohaMaui.Core.Repositories
                 "   AND (IS_NULL(@from) OR e.StartsAt >= @from)" +
                 "   AND (IS_NULL(@to) OR e.EndsAt <= @to)" +
                 "   AND (IS_NULL(@familyFriendly) OR e.FamilyFriendly = @familyFriendly)" +
-                "   AND (IS_NULL(@country) OR e.Place.CountryCode = @country) " +
+                "   AND (IS_NULL(@country) OR e.Place.Country = @country) " +
+                "   AND (IS_NULL(@isOffline) OR e.IsOffline = @isOffline) " +
                 "ORDER BY e.StartsAt"
                 )
                 .WithParameter("@type", EventType.Community)
@@ -53,7 +56,8 @@ namespace AlohaMaui.Core.Repositories
                 .WithParameter("@from", filter.From)
                 .WithParameter("@to", filter.To?.Date)
                 .WithParameter("@familyFriendly", filter.FamilyFriendly)
-                .WithParameter("@country", filter.Country);
+                .WithParameter("@country", filter.Country)
+                .WithParameter("@isOffline", filter.IsOffline);
 
             var results = new List<CommunityEvent>();
 
@@ -136,5 +140,30 @@ namespace AlohaMaui.Core.Repositories
             }
             return results;
         }
+
+        public async Task<IEnumerable<string>> FindAllCountries()
+        {
+            var container = _containerProvider.GetContainer();
+            var query = new QueryDefinition("SELECT DISTINCT(e.Place.Country) as Name FROM events e ");
+
+            var results = new List<CountryResult>();
+
+            using var iterator = container.GetItemQueryIterator<CountryResult>(query);
+            while (iterator.HasMoreResults)
+            {
+                foreach (var item in await iterator.ReadNextAsync())
+                {
+                    results.Add(item);
+                }
+            }
+            return results
+                .Where(x => !string.IsNullOrEmpty(x.Name))
+                .Select(x => x.Name!);
+        }
+    }
+
+    class CountryResult
+    {
+        public string? Name { get; set; }
     }
 }

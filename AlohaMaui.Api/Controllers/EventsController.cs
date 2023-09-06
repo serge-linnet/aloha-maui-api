@@ -27,26 +27,50 @@ public class EventsController : BaseApiController
     private readonly IAppCache _cache;
 
     public EventsController(
-        ILogger<EventsController> logger, 
+        ILogger<EventsController> logger,
         ICommunityEventRepository eventRepository,
         ISender mediator,
         IMapper mapper,
         IAppCache cache)
     {
         _logger = logger;
-        _eventRepository = eventRepository;    
+        _eventRepository = eventRepository;
         _mediator = mediator;
         _mapper = mapper;
         _cache = cache;
     }
 
     [HttpGet]
-    public async Task<IEnumerable<CommunityEvent>> Find(PublicCommunityEventsFilter? request)
+    public async Task<IEnumerable<CommunityEvent>> Find([FromQuery] string? country, [FromQuery] bool? isOffline)
     {
-        var filter = new PublicCommunityEventsFilter(); // todo: read from request
+        var filter = new PublicCommunityEventsFilter()
+        {
+            Country = country,
+            IsOffline = isOffline
+        };
 
         var query = new GetPublicCommunityEventsQuery(filter);
-        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query));
+
+        IEnumerable<CommunityEvent> result;
+        if (filter == new PublicCommunityEventsFilter())
+        {
+            result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query),
+                              DateTime.UtcNow.AddHours(1));
+        }
+        else
+        {
+            result = await _mediator.Send(query);
+        }
+
+        return result;
+    }
+
+    [HttpGet("countries")]
+    public async Task<IEnumerable<string>> FindAllCountries()
+    {
+        var query = new GetAllEventCountriesQuery();
+        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query),
+            DateTime.UtcNow.AddHours(1));
 
         return result;
     }
@@ -95,13 +119,13 @@ public class EventsController : BaseApiController
     public async Task<IActionResult> Create([FromBody] EventsRequest request)
     {
         var newEvent = request.ToEvent();
-        
+
         try
         {
             var assets = await _mediator.Send(new CreateCommunityEventAssetsCommand(request.Photo));
             newEvent.Assets = assets;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, $"CreateEvent:CreateAssets:Fail(UserId={UserId}; EventId={newEvent.Id}");
             // no op
@@ -146,7 +170,7 @@ public class EventsController : BaseApiController
                 _logger.LogError(ex, $"UpdateEvent:CreateAssets:Fail(UserId={UserId}; EventId={evnt.Id}");
                 // no op
             }
-        } 
+        }
         else
         {
             evnt.Assets = oldEvent.Assets;
