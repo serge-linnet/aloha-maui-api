@@ -147,7 +147,7 @@ namespace AlohaMaui.Core.Repositories
             var query = new QueryDefinition("" +
                 "SELECT DISTINCT(e.Place.Country) as Name " +
                 "FROM events e " +
-                "AND e.Status = @approved")
+                "WHERE e.Status = @approved")
                 .WithParameter("@approved", EventStatus.Approved);
 
             var results = new List<CountryResult>();
