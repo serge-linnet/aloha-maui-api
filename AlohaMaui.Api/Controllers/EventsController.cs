@@ -52,10 +52,10 @@ public class EventsController : BaseApiController
         var query = new GetPublicCommunityEventsQuery(filter);
 
         IEnumerable<CommunityEvent> result;
-        if (filter == new PublicCommunityEventsFilter())
+        if (filter == default)
         {
             result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query),
-                              DateTime.UtcNow.AddHours(1));
+                              DateTime.UtcNow.AddHours(4));
         }
         else
         {
@@ -70,7 +70,7 @@ public class EventsController : BaseApiController
     {
         var query = new GetAllEventCountriesQuery();
         var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query),
-            DateTime.UtcNow.AddHours(1));
+            DateTime.UtcNow.AddHours(4));
 
         return result;
     }
@@ -88,6 +88,7 @@ public class EventsController : BaseApiController
     {
         var result = await _mediator.Send(new ChangeCommunityEventStatusCommand(id, request.Status));
         _cache.Remove(new GetPublicCommunityEventsQuery(new PublicCommunityEventsFilter()).GetCacheKey());
+        _cache.Remove(new GetAllEventCountriesQuery().GetCacheKey());
         return result;
     }
 
@@ -136,6 +137,7 @@ public class EventsController : BaseApiController
 
         _cache.Remove(new GetAllUserCommunityEventsQuery(UserId.Value).GetCacheKey());
         _cache.Remove(new GetPublicCommunityEventsQuery(new PublicCommunityEventsFilter()).GetCacheKey());
+        _cache.Remove(new GetAllEventCountriesQuery().GetCacheKey());
 
         return Ok(newEvent);
     }
