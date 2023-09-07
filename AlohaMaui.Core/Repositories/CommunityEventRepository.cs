@@ -144,7 +144,11 @@ namespace AlohaMaui.Core.Repositories
         public async Task<IEnumerable<string>> FindAllCountries()
         {
             var container = _containerProvider.GetContainer();
-            var query = new QueryDefinition("SELECT DISTINCT(e.Place.Country) as Name FROM events e ");
+            var query = new QueryDefinition("" +
+                "SELECT DISTINCT(e.Place.Country) as Name " +
+                "FROM events e " +
+                "AND e.Status = @approved")
+                .WithParameter("@approved", EventStatus.Approved);
 
             var results = new List<CountryResult>();
 
