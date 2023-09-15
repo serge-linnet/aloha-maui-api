@@ -38,7 +38,7 @@ public class PledgesController : BaseApiController
     public async Task<IEnumerable<PledgeEvent>> Find()
     {
         var query = new GetAllPledgeEventsQuery();
-        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query));
+        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query), DateTime.UtcNow.AddHours(4));
 
         return result;
     }
@@ -61,7 +61,7 @@ public class PledgesController : BaseApiController
     public async Task<IActionResult> GetTotals()
     {
         var query = new GetPledgeEventTotalsQuery();
-        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query));
+        var result = await _cache.GetOrAddAsync(query.GetCacheKey(), () => _mediator.Send(query), DateTime.UtcNow.AddHours(4));
 
         return Ok(result);
     }
