@@ -36,7 +36,8 @@ namespace AlohaMaui.Core.Repositories
                 "SELECT * from events e " +
                 "WHERE " +
                 "   e.type = @type" +
-                "   AND e.Status = @status"
+                "   AND e.Status = @status " +
+                "ORDER BY e._ts DESC"
                 )
                 .WithParameter("@type", EventType.Pledge)
                 .WithParameter("@status", EventStatus.Approved);
